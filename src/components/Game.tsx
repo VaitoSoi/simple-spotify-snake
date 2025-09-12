@@ -79,6 +79,18 @@ export default function () {
         }
     }
 
+    async function checkPremium() {
+        try {
+            const response = await api.get("/me", { headers: { Authorization: `Bearer ${token}` } });
+            if (response.data.product != "premium")
+                return setError("This account is not a Spotify Premium account");
+            setUsePlayer(true);
+        } catch (err) {
+            console.error(err);
+            setError("An error occurred while checking your premium status");
+        }
+    }
+
     document.addEventListener('keydown', (event) => {
         if (event.key == "Escape") setShowHowToPlay(false);
     });
@@ -117,7 +129,7 @@ export default function () {
                             <Checkbox
                                 className='size-6'
                                 checked={usePlayer}
-                                onCheckedChange={(checked) => setUsePlayer(!!checked)}
+                                onCheckedChange={(checked) => checked ? checkPremium() : setUsePlayer(false)}
                             />
                             <p>Play the track when the snake eat it.<br /><span className='text-red-500'>* require Spotify Premium account</span></p>
                         </div>
