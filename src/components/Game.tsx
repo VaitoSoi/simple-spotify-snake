@@ -7,6 +7,7 @@ import SnakeHuhIcon from '@/icons/SnakeHuh.svg';
 import SpotifyHuh from '@/icons/SpotifyHuh.svg';
 import Saved from '@/icons/Saved.jpeg';
 import { Snake } from '@/components/ui/icon';
+import { Checkbox } from './ui/checkbox';
 
 type PlaylistId = `playlist:${string}` | "saved";
 interface Playlist {
@@ -24,6 +25,7 @@ export default function () {
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [selectedTracklist, setSelectedTracklist] = useState<TracklistId>();
     const [typingAlbum, setTypingAlbum] = useState<string>("");
+    const [usePlayer, setUsePlayer] = useState<boolean>(false);
 
     async function fetchPlaylists() {
         if (!token) return setError('No token, please reload this page!');
@@ -90,7 +92,7 @@ export default function () {
                 <p>Use W/A/S/D or arrow key to navigate your snake.</p>
                 <p>Eat the track on the screen will play it.</p>
                 <p className='font-bold text-2xl mt-5'>Limitation</p>
-                <p>To play this game, you have to have a Spotify Premium accounts TvT.</p>
+                <p>To play this game with sound, you have to have a Spotify Premium accounts TvT.</p>
                 <p>You are limited to a 35x35 board, which means the highest score that you can achieve is 1225 points.</p>
                 <p>There is some random line cut through the snake, I don't know where it's from or how to fix it ;-;</p>
             </div>
@@ -99,7 +101,7 @@ export default function () {
             ? <Error error={error} />
             : !selectedTracklist
                 ? <div className="m-auto w-3/4 h-3/4 border-4 flex border-black rounded-2xl">
-                    <div className="w-1/2 flex">
+                    <div className="w-1/2 flex flex-col">
                         <div className='m-auto flex flex-col items-center'>
                             <img
                                 className='size-30 cursor-pointer'
@@ -110,6 +112,14 @@ export default function () {
                             />
                             <p className='text-3xl font-bold'>Simple Snake Game</p>
                             <p className='text-xl'>Let the snake eat your playlist &gt;:)</p>
+                        </div>
+                        <div className='flex flex-row py-4 px-7 gap-3 text-xl items-center'>
+                            <Checkbox
+                                className='size-6'
+                                checked={usePlayer}
+                                onCheckedChange={(checked) => setUsePlayer(!!checked)}
+                            />
+                            <p>Play the track when the snake eat it.<br /><span className='text-red-500'>* require Spotify Premium account</span></p>
                         </div>
                     </div>
                     <div className='w-1/2 h-full flex flex-col p-5 gap-5'>{
@@ -144,7 +154,7 @@ export default function () {
                             </>
                     }</div>
                 </div>
-                : <Game selectedTrackListId={selectedTracklist} token={token!} />
+                : <Game selectedTrackListId={selectedTracklist} token={token!} usePlayer={usePlayer} />
         }
     </div>;
 }
@@ -162,16 +172,21 @@ type Position = [x: number, y: number]
 type Direction = "up" | "down" | "left" | "right";
 const EliminatingDirection: Direction[][] = [["up", "down"], ["left", "right"]];
 
-function Game({ selectedTrackListId, token }: { selectedTrackListId: TracklistId, token: string }) {
+function Game({
+    selectedTrackListId,
+    token,
+    usePlayer
+}: {
+    selectedTrackListId: TracklistId,
+    token: string,
+    usePlayer: boolean
+}) {
     const [error, setError] = useState<string>();
     const [tracks, setTracks] = useState<Track[]>([]);
     const [highestScore, setHighestScore] = useState<number>(parseInt(localStorage.getItem("highest") || "0") || 0);
 
     // Player - to play the song
     const [player, setPlayer] = useState<any>(undefined);
-
-    // Init value
-    const initSnake: Position[] = [[0, 0], [0, 0], [0, 0]];
 
     // Game board
     const blockOnGameBoard = 20;
@@ -212,27 +227,26 @@ function Game({ selectedTrackListId, token }: { selectedTrackListId: TracklistId
         setPaused(false);
         setGameOver(false);
         const newTracks = await getTracks();
-        newApplePosition(newTracks || tracks);
+        newApplePosition(newTracks!);
     }
 
     async function getTracks() {
         try {
             const tracks: Track[] = [];
-            if (selectedTrackListId == "saved" || selectedTrackListId.startsWith("playlist:")) {
-                let response: AxiosResponse;
-                if (selectedTrackListId == "saved")
-                    response = await api.get(
-                        `/me/tracks`,
-                        {
-                            headers: {
-                                Authorization: `Bearer ${token}`
-                            }
+            if (selectedTrackListId == "saved") {
+                let response: AxiosResponse = await api.get(
+                    `/me/tracks?limit=50`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
                         }
-                    );
-                else
+                    }
+                );
+                for (const item of response.data.items)
+                    tracks.push(extractTrack(item.track));
+                while (response.data.next && tracks.length < 1000) {
                     response = await api.get(
-                        `/playlists/${selectedTrackListId.slice(9)}?` +
-                        `fields=tracks(items(track(album(images),artists(name),duration_ms,name,id)))`,
+                        response.data.next,
                         {
                             headers: {
                                 Authorization: `Bearer ${token}`
@@ -240,9 +254,21 @@ function Game({ selectedTrackListId, token }: { selectedTrackListId: TracklistId
                         }
                     );
 
+                    for (let index = 0; index < response.data.items.length && tracks.length < 1000; index++)
+                        tracks.push(extractTrack(response.data.items[index].track));
+                }
+            } else if (selectedTrackListId.startsWith("playlist:")) {
+                const response = await api.get(
+                    `/playlists/${selectedTrackListId.slice(9)}?` +
+                    `fields=tracks(items(track(album(images),artists(name),duration_ms,name,id)))`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                );
                 for (const item of response.data.tracks.items)
                     tracks.push(extractTrack(item.track));
-                setTracks(tracks);
             } else if (selectedTrackListId.startsWith("album:")) {
                 const response = await api.get(
                     `/albums/${selectedTrackListId.slice(6)}`,
@@ -261,6 +287,7 @@ function Game({ selectedTrackListId, token }: { selectedTrackListId: TracklistId
                         artists: item.artists.map((val: { name: string }) => val.name)
                     });
             } else return setError("Hmmmm, I think the dev is fucked up...");
+            setTracks(tracks);
             return tracks;
         } catch (err) {
             setError("An error occured while fetching tracks.");
@@ -280,9 +307,9 @@ function Game({ selectedTrackListId, token }: { selectedTrackListId: TracklistId
             case "Escape":
                 if (gameOver) return;
                 if (paused)
-                    player?.resume();
+                    await player?.resume();
                 else
-                    player?.pause();
+                    await player?.pause();
                 setPaused(!paused);
                 break;
             case "ArrowUp":
@@ -383,6 +410,7 @@ function Game({ selectedTrackListId, token }: { selectedTrackListId: TracklistId
         setSnake(newSnake);
         setScore((score) => score + 1);
         newApplePosition();
+        if (!usePlayer) return;
         try {
             await api.put(
                 `/me/player/play`,
@@ -410,17 +438,18 @@ function Game({ selectedTrackListId, token }: { selectedTrackListId: TracklistId
         }
         setTrackPosition(newPosition);
         const newTracks = [..._tracks];
-        const index = Math.floor(Math.random() * tracks.length);
-        const currentTrack = newTracks.splice(index, 1).shift()!;
+        const index = Math.floor(Math.random() * newTracks.length);
+        const _currentTrack = newTracks.splice(index, 1).shift()!;
         if (!newTracks.length) return setGameOver('out_of_song');
-        setCurrentTrack(currentTrack);
+        if (!usePlayer) setPlayingTrack(currentTrack);
+        setCurrentTrack(_currentTrack);
         setTracks(newTracks);
     }
     /* eslint-enable @typescript-eslint/naming-convention */
 
     /* eslint-disable @typescript-eslint/naming-convention */
     useEffect(() => {
-        if (player || error) return;
+        if (player || error || !usePlayer) return;
 
         const script = document.createElement("script");
         script.src = "https://sdk.scdn.co/spotify-player.js";
@@ -545,7 +574,7 @@ function Game({ selectedTrackListId, token }: { selectedTrackListId: TracklistId
                             />
                         </div>
                         <div className='flex flex-col gap-2'>
-                            <p>Now playing</p>
+                            <p>{usePlayer ? "Now playing" : "On the screen"}</p>
                             <div className='w-100 h-fit rounded-md border-1 p-4'>
                                 <p className='font-semibold'>{playingTrack?.name || "None..."}</p>
                                 <p>{playingTrack?.artists.join(", ") || ""}</p>
