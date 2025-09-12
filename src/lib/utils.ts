@@ -15,3 +15,12 @@ export const base64Encode = (input: ArrayBuffer) =>
         .replace(/=/g, '')
         .replace(/\+/g, '-')
         .replace(/\//g, '_');
+
+// ShadCN
+
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+}
