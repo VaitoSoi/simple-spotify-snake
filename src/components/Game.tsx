@@ -106,6 +106,7 @@ export default function () {
                 <p className='font-bold text-2xl mt-5'>Limitation</p>
                 <p>To play this game with sound, you have to have a Spotify Premium accounts TvT.</p>
                 <p>You are limited to a 35x35 board, which means the highest score that you can achieve is 1225 points.</p>
+                <p>The liked song is limited to 800 track.</p>
                 <p>There is some random line cut through the snake, I don't know where it's from or how to fix it ;-;</p>
             </div>
         </div>}
@@ -256,7 +257,7 @@ function Game({
                 );
                 for (const item of response.data.items)
                     tracks.push(extractTrack(item.track));
-                while (response.data.next && tracks.length < 1000) {
+                while (response.data.next && tracks.length < 800) {
                     response = await api.get(
                         response.data.next,
                         {
@@ -266,7 +267,7 @@ function Game({
                         }
                     );
 
-                    for (let index = 0; index < response.data.items.length && tracks.length < 1000; index++)
+                    for (let index = 0; index < response.data.items.length && tracks.length < 800; index++)
                         tracks.push(extractTrack(response.data.items[index].track));
                 }
             } else if (selectedTrackListId.startsWith("playlist:")) {
