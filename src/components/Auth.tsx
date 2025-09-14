@@ -1,16 +1,20 @@
 import { useNavigate, useSearchParams } from "react-router";
 import Error from "./Error";
 import { useEffect, useState } from "react";
-import { ClientID, RedirectURI } from "@/lib/api";
+import { RedirectURI } from "@/lib/api";
 import axios from "axios";
 
 export default function () {
     const [error, setError] = useState<string>();
     const [searchParams] = useSearchParams();
     const navigator = useNavigate();
+    const clientId = localStorage.getItem("client-id");
 
     useEffect(() => void auth(), []);
     async function auth() {
+        if (!clientId)
+            return setError("Client ID is not set");
+
         const code = searchParams.get('code'),
             expectState = localStorage.getItem('state'),
             gotState = searchParams.get('state');
@@ -31,7 +35,7 @@ export default function () {
             const response = await axios.post(
                 url,
                 {
-                    client_id: ClientID,
+                    client_id: clientId,
                     grant_type: 'authorization_code',
                     code,
                     redirect_uri: RedirectURI,
