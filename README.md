@@ -1,6 +1,8 @@
 # simple-spotify-snake
 Let the snake eat your playlist >:)
 
+[Demo video](https://youtu.be/A5zP_rVKGVU?si=K7MhdBCa1rGZV3Ah)
+
 ## I. So what is this ._.?
 
 + This is a simple snake game but instead of eating apple, the snake eat your playlist or your favorite album >:)
