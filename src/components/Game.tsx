@@ -556,9 +556,32 @@ function Game({
                                     }</p>
                                 </div>
                             </div>
-                            <div className='flex flex-row gap-10'>
-                                <p><span className='font-bold'>Score:</span> {score}</p>
-                                <p><span className='font-bold'>Highest:</span> {Math.max(score, highestScore)}</p>
+                            <div className='flex flex-col gap-5 lg:flex-row'>
+                                <div className='flex flex-row gap-10'>
+                                    <p><span className='font-bold'>Score:</span> {score}</p>
+                                    <p><span className='font-bold'>Highest:</span> {Math.max(score, highestScore)}</p>
+                                </div>
+                                <div className='lg:ml-auto flex flex-row gap-2 items-center'>
+                                    <p className='font-bold'>Speed</p>
+                                    <div className='w-40 h-10 border-2 rounded-2xl flex flex-row items-center text-center'>
+                                        <p
+                                            className={'h-full w-1/4 leading-9 rounded-tl-2xl rounded-bl-2xl cursor-pointer' + (gameSpeed == 0.5 ? ' bg-gray-700 text-white' : '')}
+                                            onClick={() => setGameSpeed(0.5)}
+                                        >0.5</p>
+                                        <p
+                                            className={'h-full w-1/4 leading-9 cursor-pointer' + (gameSpeed == 1 ? ' bg-gray-700 text-white' : '')}
+                                            onClick={() => setGameSpeed(1)}
+                                        >1</p>
+                                        <p
+                                            className={'h-full w-1/4 leading-9 cursor-pointer' + (gameSpeed == 2 ? ' bg-gray-700 text-white' : '')}
+                                            onClick={() => setGameSpeed(2)}
+                                        >2</p>
+                                        <p
+                                            className={'h-full w-1/4 leading-9 rounded-tr-2xl rounded-br-2xl cursor-pointer' + (gameSpeed == 3 ? ' bg-gray-700 text-white' : '')}
+                                            onClick={() => setGameSpeed(3)}
+                                        >3</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div
