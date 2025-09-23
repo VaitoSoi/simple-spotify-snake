@@ -36,7 +36,7 @@ export default function () {
     }
 
     return <div className="w-screen h-screen flex bg-white">
-        <div className="xl:m-auto flex rounded-2xl xl:h-2/3 xl:w-1/3 xl:border-4 border-black">
+        <div className="m-auto flex rounded-2xl xl:h-2/3 xl:w-1/3 xl:border-4 border-black">
             <div className="w-full m-auto flex flex-col items-center gap-2">
                 <img src={Snake} alt="Snake" className='size-30' />
                 <p className="font-bold text-3xl">Simple Snake Game</p>
