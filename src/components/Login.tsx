@@ -36,11 +36,11 @@ export default function () {
     }
 
     return <div className="w-screen h-screen flex bg-white">
-        <div className="m-auto flex rounded-2xl h-2/3 w-1/3 border-4 border-black">
+        <div className="xl:m-auto flex rounded-2xl xl:h-2/3 xl:w-1/3 xl:border-4 border-black">
             <div className="w-full m-auto flex flex-col items-center gap-2">
                 <img src={Snake} alt="Snake" className='size-30' />
                 <p className="font-bold text-3xl">Simple Snake Game</p>
-                <p className='mt-10 text-xl'><a
+                <p className='mt-10 text-xl w-4/5 text-center xl:w-full'><a
                     href="https://github.com/vaitosoi/simple-spotify-snake/blob/main/docs/CREATE_APP.md"
                     className='text-blue-600 hover:underline'
                 >Create your Spotify app</a>, then put your Client ID here</p>

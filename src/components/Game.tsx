@@ -8,6 +8,7 @@ import SpotifyHuh from '@/icons/SpotifyHuh.svg';
 import Saved from '@/icons/Saved.jpeg';
 import { Snake } from '@/components/ui/icon';
 import { Checkbox } from './ui/checkbox';
+import { ArrowBigDown, ArrowBigLeft, ArrowBigRight, ArrowBigUp } from 'lucide-react';
 
 type PlaylistId = `playlist:${string}` | "saved";
 interface Playlist {
@@ -113,9 +114,9 @@ export default function () {
         {error
             ? <Error error={error} />
             : !selectedTracklist
-                ? <div className="m-auto w-3/4 h-3/4 border-4 flex border-black rounded-2xl">
-                    <div className="w-1/2 flex flex-col">
-                        <div className='m-auto flex flex-col items-center'>
+                ? <div className="flex flex-col h-full xl:flex-row xl:m-auto xl:w-3/4 xl:h-3/4 xl:border-4 xl:border-black rounded-2xl">
+                    <div className="h-1/3 w-full xl:h-full xl:w-1/2 flex flex-col">
+                        <div className='py-5 m-auto flex flex-col items-center'>
                             <img
                                 className='size-30 cursor-pointer'
                                 src={src}
@@ -126,16 +127,18 @@ export default function () {
                             <p className='text-3xl font-bold'>Simple Snake Game</p>
                             <p className='text-xl'>Let the snake eat your playlist &gt;:)</p>
                         </div>
-                        <div className='flex flex-row py-4 px-7 gap-3 text-xl items-center'>
+                        <div
+                            className='flex flex-row xl:py-4 xl:px-7 px-5 gap-3 text-lg xl:text-xl items-center'
+                            onClick={() => usePlayer ? setUsePlayer(false) : checkPremium()}
+                        >
                             <Checkbox
                                 className='size-6'
                                 checked={usePlayer}
-                                onCheckedChange={(checked) => checked ? checkPremium() : setUsePlayer(false)}
                             />
                             <p>Play the track when the snake eat it.<br /><span className='text-red-500'>* require Spotify Premium account</span></p>
                         </div>
                     </div>
-                    <div className='w-1/2 h-full flex flex-col p-5 gap-5'>{
+                    <div className='h-1/3 w-full xl:h-full xl:w-1/2 flex flex-col p-5 gap-5'>{
                         !playlists.length
                             ? <div className='m-auto flex flex-col items-center gap-5'>
                                 <Snake className='size-30 animate-spin' />
@@ -153,10 +156,10 @@ export default function () {
                                     }}
                                 />
                                 <p className='text-xl font-semibold'>Select one playlist to continue:</p>
-                                <div className={'w-full h-4/5 flex flex-col gap-2 ' + (playlists.length >= 6 ? "overflow-y-scroll " : "")}>{
+                                <div className={'w-full h-4/5 flex flex-col gap-2 ' + (playlists.length >= 7 ? "xl:overflow-y-scroll" : "")}>{
                                     playlists.map((item) =>
                                         <button
-                                            className='w-full h-1/7 p-2 gap-3 overflow-x-clip flex flex-row items-center rounded-2xl border-2 border-gray-200 bg-gray-200 hover:bg-gray-400 cursor-pointer'
+                                            className='w-full h-1/3 xl:h-1/7 p-2 gap-3 overflow-x-clip flex flex-row items-center rounded-2xl border-2 border-gray-200 bg-gray-200 hover:bg-gray-400 cursor-pointer'
                                             onClick={() => setSelectedTracklist(item.id)}
                                         >
                                             <img src={item.image} className='h-[99%] rounded-xl' />
@@ -214,19 +217,18 @@ function Game({
     const [playingTrack, setPlayingTrack] = useState<Track>();
     const [score, setScore] = useState<number>(0);
     const [gameOver, setGameOver] = useState<boolean | "out_of_song">(false);
+    const [gameSpeed, setGameSpeed] = useState<0.5 | 1 | 2 | 3>(1);
     const direction = useRef<Direction>("down");
     const newDirection = useRef<Direction>("down");
     const gameLoop = useRef<NodeJS.Timeout>(null);
 
     useEffect(() => void initGame(), []);
+    useEffect(() => setSnakeSize(gameBoardSize / blockOnGameBoard), [gameBoardSize]);
     useEffect(() => {
-        setSnakeSize(gameBoardSize / blockOnGameBoard);
-        localStorage.setItem("size", gameBoardSize.toString());
-    }, [gameBoardSize]);
-    useEffect(() => {
-        gameLoop.current = setInterval(() => gameTick(), 400);
+        if (!tracks.length) return;
+        gameLoop.current = setInterval(() => gameTick(), 400 / gameSpeed);
         return () => clearInterval(gameLoop.current || undefined);
-    }, [paused, direction, trackPosition, tracks, player, gameOver, score]);
+    }, [paused, direction, trackPosition, tracks, player, gameOver, score, gameSpeed]);
     useEffect(() => {
         if (!gameOver) return;
         const newHighestScore = Math.max(score, highestScore);
@@ -240,7 +242,9 @@ function Game({
         setPaused(false);
         setGameOver(false);
         const newTracks = await getTracks();
-        newApplePosition(newTracks!);
+        if (!newTracks) return;
+        setTracks(newTracks);
+        newApplePosition(newTracks);
     }
 
     async function getTracks() {
@@ -257,7 +261,7 @@ function Game({
                 );
                 for (const item of response.data.items)
                     tracks.push(extractTrack(item.track));
-                while (response.data.next && tracks.length < 800) {
+                while (response.data.next && tracks.length < 1225) {
                     response = await api.get(
                         response.data.next,
                         {
@@ -267,7 +271,7 @@ function Game({
                         }
                     );
 
-                    for (let index = 0; index < response.data.items.length && tracks.length < 800; index++)
+                    for (let index = 0; index < response.data.items.length && tracks.length < 1225; index++)
                         tracks.push(extractTrack(response.data.items[index].track));
                 }
             } else if (selectedTrackListId.startsWith("playlist:")) {
@@ -300,7 +304,6 @@ function Game({
                         artists: item.artists.map((val: { name: string }) => val.name)
                     });
             } else return setError("Hmmmm, I think the dev is fucked up...");
-            setTracks(tracks);
             return tracks;
         } catch (err) {
             setError("An error occured while fetching tracks.");
@@ -533,12 +536,33 @@ function Game({
                     className='h-full w-full flex'
                     ref={(node) => {
                         if (!node) return;
-                        setGameBoardSize(Math.floor(Math.min(node.clientHeight, node.clientWidth) * 4 / 5));
+                        setGameBoardSize(Math.floor(
+                            Math.min(node.clientHeight, node.clientWidth) *
+                            (node.clientWidth < 500 ? 9 / 10 : 4 / 5)
+                        ));
                     }}
                 >
-                    <div className='m-auto flex flex-row gap-5'>
+                    <div className='m-auto flex xl:flex-row flex-col gap-5 p-5'>
+                        <div className='w-full xl:hidden flex flex-col gap-2'>
+                            <div className='w-full max-w-full flex flex-col gap-1'>
+                                <p>{usePlayer ? "Now playing" : "On the screen"}</p>
+                                <div className='w-full h-fit rounded-md border-1 p-4'>
+                                    <p className='font-semibold'>{playingTrack?.name || "None..."}</p>
+                                    <p>{
+                                        playingTrack
+                                            ? playingTrack.artists.join(", ").slice(0, 65) +
+                                            (playingTrack.artists.join(", ").length >= 65 ? "..." : "")
+                                            : ""
+                                    }</p>
+                                </div>
+                            </div>
+                            <div className='flex flex-row gap-10'>
+                                <p><span className='font-bold'>Score:</span> {score}</p>
+                                <p><span className='font-bold'>Highest:</span> {Math.max(score, highestScore)}</p>
+                            </div>
+                        </div>
                         <div
-                            className='relative flex w-full border-3 border-black'
+                            className='relative flex w-full xl:m-0 mx-auto border-3 border-black'
                             style={{
                                 width: gameBoardSize + 4,
                                 height: gameBoardSize + 4,
@@ -586,7 +610,7 @@ function Game({
                                 src={currentTrack!.image}
                             />
                         </div>
-                        <div className='flex flex-col gap-2'>
+                        <div className='hidden xl:flex flex-col gap-2'>
                             <p>{usePlayer ? "Now playing" : "On the screen"}</p>
                             <div className='w-100 h-fit rounded-md border-1 p-4'>
                                 <p className='font-semibold'>{playingTrack?.name || "None..."}</p>
@@ -594,6 +618,51 @@ function Game({
                             </div>
                             <p><span className='font-bold'>Score:</span> {score}</p>
                             <p><span className='font-bold'>Highest score:</span> {Math.max(score, highestScore)}</p>
+                            <div className='flex flex-row gap-2 items-center'>
+                                <p className='font-bold'>Speed</p>
+                                <div className='w-40 h-10 border-2 rounded-2xl flex flex-row items-center text-center'>
+                                    <p
+                                        className={'h-full w-1/4 leading-9 rounded-tl-2xl rounded-bl-2xl cursor-pointer' + (gameSpeed == 0.5 ? ' bg-gray-700 text-white' : '')}
+                                        onClick={() => setGameSpeed(0.5)}
+                                    >0.5</p>
+                                    <p
+                                        className={'h-full w-1/4 leading-9 cursor-pointer' + (gameSpeed == 1 ? ' bg-gray-700 text-white' : '')}
+                                        onClick={() => setGameSpeed(1)}
+                                    >1</p>
+                                    <p
+                                        className={'h-full w-1/4 leading-9 cursor-pointer' + (gameSpeed == 2 ? ' bg-gray-700 text-white' : '')}
+                                        onClick={() => setGameSpeed(2)}
+                                    >2</p>
+                                    <p
+                                        className={'h-full w-1/4 leading-9 rounded-tr-2xl rounded-br-2xl cursor-pointer' + (gameSpeed == 3 ? ' bg-gray-700 text-white' : '')}
+                                        onClick={() => setGameSpeed(3)}
+                                    >3</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className='xl:hidden flex flex-col w-full gap-2 items-center'>
+                            <div className='w-1/4 h-20 rounded-2xl bg-gray-300 flex'>
+                                <ArrowBigUp className='m-auto size-10'
+                                    onClick={() => newDirection.current = "up"}
+                                />
+                            </div>
+                            <div className='w-4/5 h-20 flex flex-row gap-2'>
+                                <div className='w-1/3 h-full rounded-2xl bg-gray-300 flex'>
+                                    <ArrowBigLeft className='m-auto size-10'
+                                        onClick={() => newDirection.current = "left"}
+                                    />
+                                </div>
+                                <div className='w-1/3 h-full rounded-2xl bg-gray-300 flex'>
+                                    <ArrowBigDown className='m-auto size-10'
+                                        onClick={() => newDirection.current = "down"}
+                                    />
+                                </div>
+                                <div className='w-1/3 h-full rounded-2xl bg-gray-300 flex'>
+                                    <ArrowBigRight className='m-auto size-10'
+                                        onClick={() => newDirection.current = "right"}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
