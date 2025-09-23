@@ -1,7 +1,9 @@
 # simple-spotify-snake
 Let the snake eat your playlist >:)
 
-[Demo video](https://youtu.be/A5zP_rVKGVU?si=K7MhdBCa1rGZV3Ah)
+<video width="1000" controls>
+  <source src="https://hc-cdn.hel1.your-objectstorage.com/s/v3/cd3a697835a465c76175399738ba80a46f32efec_2025-09-23_23-49-51.mp4" type="video/mp4">
+</video>
 
 ## I. So what is this ._.?
 
@@ -13,7 +15,7 @@ Let the snake eat your playlist >:)
 
 + You have to login with Spotify in order to fetch and play the song you ate :D.
 
-+ You can use W/A/S/D or Arrow key to navigate the snake and eat the playlist.
++ You can use W/A/S/D or Arrow key or Arrow button (if you are on mobile device) to navigate the snake and eat the playlist.
 
 ## III. Limitation:
 
@@ -31,4 +33,6 @@ Let the snake eat your playlist >:)
 
 + Run command `bun run start`.
 
-+ Enjoy the game at [localhost:8000](http://localhost:8000)
++ Create a Spotify app following [this instruction](./docs/CREATE_APP.md)
+
++ Enjoy the game at [127.0.0.1:8080](http://127.0.0.1:8080) (It have to be `127.0.0.1:8080` or you will recieve `Mismatch state` error)
