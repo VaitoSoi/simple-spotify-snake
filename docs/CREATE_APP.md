@@ -4,17 +4,25 @@
 
 2. Click create app
 
-![Create app](https://hc-cdn.hel1.your-objectstorage.com/s/v3/8846efb1248b578aeb0a0f994d1b961ebde0728f_simple_spotify_snake_tutorial.png)
+    ![Create app](https://hc-cdn.hel1.your-objectstorage.com/s/v3/8846efb1248b578aeb0a0f994d1b961ebde0728f_simple_spotify_snake_tutorial.png)
 
 3. Fill the app information fields folling these instruction:
 
-    + App name: whatever you want (ex: Simple Spotify Snake)
+    + App name: whatever you want (e.g. Simple Spotify Snake)
 
-    + App description: whatever you want (ex: A Simple Snake game but instead of apple, the snake will eat your track)
+    + App description: whatever you want (e.g. A Simple Snake game but instead of apple, the snake will eat your track)
 
     + Website: whatever you want
 
-    + Redirect URIs: `https://sss.vaito.hackclub.app/auth`
+    + Redirect URIs: 
+        
+        + `https://sss.vaito.hackclub.app/auth` (If you are trying on live demo) 
+        
+            **OR**
+        
+        + `http://127.0.0.1:8080/auth` (If you are running on local machine)
+
+            **Remember to click the `Add` button after filling the URI**
 
     + Which API/SDKs are you planning to use: `Web API` and `Web Playback SDK`
 
@@ -24,10 +32,10 @@
 
 4. Click the save button
 
-5. Click copy `Client ID` button
+5. Click copy Client ID button
 
-![Copy ID](https://hc-cdn.hel1.your-objectstorage.com/s/v3/53228808a8af8baed49e4fbe3feb3b3477c4f87b_simple_spotify_snake_tutorial__1_.png)
+    ![Copy ID](https://hc-cdn.hel1.your-objectstorage.com/s/v3/53228808a8af8baed49e4fbe3feb3b3477c4f87b_simple_spotify_snake_tutorial__1_.png)
 
 6. Paste it in the Client ID box
 
-![Paste ID](https://hc-cdn.hel1.your-objectstorage.com/s/v3/af20e8a4d6faea0d65fcf0c33ffa0ae298ddf149_simple_spotify_snake_tutorial__2_.png)
+    ![Paste ID](https://hc-cdn.hel1.your-objectstorage.com/s/v3/af20e8a4d6faea0d65fcf0c33ffa0ae298ddf149_simple_spotify_snake_tutorial__2_.png)
