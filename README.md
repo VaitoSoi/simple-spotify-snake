@@ -1,9 +1,7 @@
 # simple-spotify-snake
 Let the snake eat your playlist >:)
 
-<video width="1000" controls>
-  <source src="https://hc-cdn.hel1.your-objectstorage.com/s/v3/cd3a697835a465c76175399738ba80a46f32efec_2025-09-23_23-49-51.mp4" type="video/mp4">
-</video>
+(Demo video)[https://hc-cdn.hel1.your-objectstorage.com/s/v3/cd3a697835a465c76175399738ba80a46f32efec_2025-09-23_23-49-51.mp4]
 
 ## I. So what is this ._.?
 
