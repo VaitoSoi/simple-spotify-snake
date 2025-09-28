@@ -25,12 +25,34 @@ Let the snake eat your playlist >:)
 
 ## IV. How to install this on your machine:
 
+**Note** If you dont setup the proxy, default proxy (https://proxy.vaito.hackclub.app/, [repo here](https://github.com/vaitosoi/simple-proxy)) will be used.
+
+### 1. Download stuff
+
 + Download [Bun.sh](https://bun.sh/)
 
-+ Download this [repo](https://github.com/VaitoSoi/simple-spotify-snake)
++ Download [this repo](https://github.com/VaitoSoi/simple-spotify-snake)
 
-+ Run command `bun run start`.
++ Download [this simple proxy](https://github.com/VaitoSoi/simple-proxy) (optional). You can use another if you want, e.g. cors proxy.
+
+### 2. Setup things
 
 + Create a Spotify app following [this instruction](./docs/CREATE_APP.md)
+
++ If you want to use the `Simple Proxy`
+
+    + Setup a the proxy following [this instruction](https://github.com/VaitoSoi/simple-proxy/blob/main/README.md)
+
+    + Change the `ProxyURL` in [this file](./src/lib/api.ts)
+
+        ```typescript
+        ...
+        export const ProxyURL = "<Put the Proxy URL (default is http://127.0.0.1:7000) here>";
+        ...
+        ```
+
+### 3. Enjoy the thing
+
++ Run command `bun run start` at game directory and `bun run index.ts` at proxy directory.
 
 + Enjoy the game at [127.0.0.1:8080](http://127.0.0.1:8080) (It have to be `127.0.0.1:8080` or you will recieve `Mismatch state` error)
