@@ -1,7 +1,7 @@
 import type { AxiosResponse } from 'axios';
 import { useEffect, useRef, useState } from 'react';
 import Error from './Error';
-import api from '@/lib/api';
+import api, { ProxyURL } from '@/lib/api';
 import SnakeIcon from '@/icons/Snake.svg';
 import SnakeHuhIcon from '@/icons/SnakeHuh.svg';
 import SpotifyHuh from '@/icons/SpotifyHuh.svg';
@@ -9,6 +9,7 @@ import Saved from '@/icons/Saved.jpeg';
 import { Snake } from '@/components/ui/icon';
 import { Checkbox } from './ui/checkbox';
 import { ArrowBigDown, ArrowBigLeft, ArrowBigRight, ArrowBigUp } from 'lucide-react';
+import { getSpotifyLinks } from '@/lib/utils';
 
 type PlaylistId = `playlist:${string}` | "saved";
 interface Playlist {
@@ -27,6 +28,7 @@ export default function () {
     const [selectedTracklist, setSelectedTracklist] = useState<TracklistId>();
     const [typingAlbum, setTypingAlbum] = useState<string>("");
     const [usePlayer, setUsePlayer] = useState<boolean>(false);
+    const [hasPremium, setHasPremium] = useState<boolean>(true);
 
     async function fetchPlaylists() {
         if (!token) return setError('No token, please reload this page!');
@@ -84,7 +86,8 @@ export default function () {
         try {
             const response = await api.get("/me", { headers: { Authorization: `Bearer ${token}` } });
             if (response.data.product != "premium")
-                return setError("This account is not a Spotify Premium account");
+                setHasPremium(false);
+            else setHasPremium(true);
             setUsePlayer(true);
         } catch (err) {
             console.error(err);
@@ -100,15 +103,20 @@ export default function () {
         {showHowToPlay && <div
             className='absolute flex w-full h-full z-10 backdrop-blur-md'
         >
-            <div className='w-1/2 h-4/5 bg-white border-2 m-auto rounded-3xl p-8 text-xl'>
+            <div className='relative w-full h-full xl:w-1/2 xl:h-4/5 flex flex-col bg-white xl:border-2 m-auto rounded-3xl p-8 text-xl'>
+                <p
+                    className='absolute font-bold top-5 right-5 text-2xl rounded-lg border-2 px-5 py-2 cursor-pointer'
+                    onClick={() => setShowHowToPlay(false)}
+                >x</p>
                 <p className='font-bold text-2xl'>How to play</p>
                 <p>Use W/A/S/D or arrow key to navigate your snake.</p>
                 <p>Eat the track on the screen will play it.</p>
                 <p className='font-bold text-2xl mt-5'>Limitation</p>
-                <p>To play this game with sound, you have to have a Spotify Premium accounts TvT.</p>
+                <p>If you don't have a Spotify Premium account, song preview URL wiill be used. Some song doesn't have a preview URL, thus, the snake can't play it.</p>
+                <p>The song preview length is fixed at 30 seconds.</p>
                 <p>You are limited to a 35x35 board, which means the highest score that you can achieve is 1225 points.</p>
-                <p>The liked song is limited to 800 track.</p>
                 <p>There is some random line cut through the snake, I don't know where it's from or how to fix it ;-;</p>
+                <p className='mt-auto'>P/s: Press ESC to close this menu :D</p>
             </div>
         </div>}
         {error
@@ -135,7 +143,7 @@ export default function () {
                                 className='size-6'
                                 checked={usePlayer}
                             />
-                            <p>Play the track when the snake eat it.<br /><span className='text-red-500'>* require Spotify Premium account</span></p>
+                            <p>Play the track when the snake eat it.<br /><span className='text-red-500'>* few song require Premium account</span></p>
                         </div>
                     </div>
                     <div className='h-1/3 w-full xl:h-full xl:w-1/2 flex flex-col p-5 gap-5'>{
@@ -170,7 +178,7 @@ export default function () {
                             </>
                     }</div>
                 </div>
-                : <Game selectedTrackListId={selectedTracklist} token={token!} usePlayer={usePlayer} />
+                : <Game selectedTrackListId={selectedTracklist} token={token!} usePlayer={usePlayer} hasPremium={hasPremium} />
         }
     </div>;
 }
@@ -191,11 +199,13 @@ const EliminatingDirection: Direction[][] = [["up", "down"], ["left", "right"]];
 function Game({
     selectedTrackListId,
     token,
-    usePlayer
+    usePlayer,
+    hasPremium
 }: {
     selectedTrackListId: TracklistId,
     token: string,
-    usePlayer: boolean
+    usePlayer: boolean,
+    hasPremium: boolean
 }) {
     const [error, setError] = useState<string>();
     const [tracks, setTracks] = useState<Track[]>([]);
@@ -208,6 +218,7 @@ function Game({
     const blockOnGameBoard = 20;
     const [gameBoardSize, setGameBoardSize] = useState<number>(700);
     const [snakeSize, setSnakeSize] = useState<number>(50);
+    const minSwipeDistance = 100;
 
     // Game state
     const [paused, setPaused] = useState<boolean>(false);
@@ -215,12 +226,17 @@ function Game({
     const [trackPosition, setTrackPosition] = useState<Position>([0, 0]);
     const [currentTrack, setCurrentTrack] = useState<Track>();
     const [playingTrack, setPlayingTrack] = useState<Track>();
+    const [playingTrackPreviewURL, setPlayingTrackPreviewUrl] = useState<string>();
     const [score, setScore] = useState<number>(0);
     const [gameOver, setGameOver] = useState<boolean | "out_of_song">(false);
     const [gameSpeed, setGameSpeed] = useState<0.5 | 1 | 2 | 3>(1);
     const direction = useRef<Direction>("down");
     const newDirection = useRef<Direction>("down");
     const gameLoop = useRef<NodeJS.Timeout>(null);
+    const [touchXStart, setTouchXStart] = useState<number>();
+    const [touchXEnd, setTouchXEnd] = useState<number>();
+    const [touchYStart, setTouchYStart] = useState<number>();
+    const [touchYEnd, setTouchYEnd] = useState<number>();
 
     useEffect(() => void initGame(), []);
     useEffect(() => setSnakeSize(gameBoardSize / blockOnGameBoard), [gameBoardSize]);
@@ -277,7 +293,7 @@ function Game({
             } else if (selectedTrackListId.startsWith("playlist:")) {
                 const response = await api.get(
                     `/playlists/${selectedTrackListId.slice(9)}?` +
-                    `fields=tracks(items(track(album(images),artists(name),duration_ms,name,id)))`,
+                    `fields=tracks(items(track(album(images),artists(name),duration_ms,name,id,preview_url)))`,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`
@@ -427,21 +443,32 @@ function Game({
         setScore((score) => score + 1);
         newApplePosition();
         if (!usePlayer) return;
-        try {
-            await api.put(
-                `/me/player/play`,
-                {
-                    uris: [`spotify:track:${currentTrack!.id}`],
-                    position_ms: Math.floor(Math.random() * currentTrack!.length * 2 / 3)
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
+        if (hasPremium)
+            try {
+                await api.put(
+                    `/me/player/play`,
+                    {
+                        uris: [`spotify:track:${currentTrack!.id}`],
+                        position_ms: Math.floor(Math.random() * currentTrack!.length * 2 / 3)
+                    },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
                     }
-                }
-            );
-        } catch (error) {
-            console.error(error);
+                );
+            } catch (error) {
+                console.error(error);
+            }
+        else {
+            try {
+                const previewUrls = await getSpotifyLinks(`${ProxyURL}https://open.spotify.com/track/${currentTrack!.id}`);
+                if (!previewUrls || !previewUrls.length) return setPlayingTrackPreviewUrl("");
+                setPlayingTrackPreviewUrl(previewUrls[0]);
+            } catch (error) {
+                setPlayingTrackPreviewUrl("");
+                console.error(error);
+            }
         }
     }
 
@@ -457,7 +484,7 @@ function Game({
         const index = Math.floor(Math.random() * newTracks.length);
         const _currentTrack = newTracks.splice(index, 1).shift()!;
         if (!newTracks.length) return setGameOver('out_of_song');
-        if (!usePlayer) setPlayingTrack(currentTrack);
+        if (!usePlayer || (usePlayer && !hasPremium)) setPlayingTrack(currentTrack);
         setCurrentTrack(_currentTrack);
         setTracks(newTracks);
     }
@@ -465,7 +492,7 @@ function Game({
 
     /* eslint-disable @typescript-eslint/naming-convention */
     useEffect(() => {
-        if (player || error || !usePlayer) return;
+        if (player || error || !usePlayer || !hasPremium) return;
 
         const script = document.createElement("script");
         script.src = "https://sdk.scdn.co/spotify-player.js";
@@ -540,6 +567,34 @@ function Game({
                             Math.min(node.clientHeight, node.clientWidth) *
                             (node.clientWidth < 500 ? 9 / 10 : 4 / 5)
                         ));
+                    }}
+                    onTouchStart={(event) => {
+                        setTouchXEnd(0);
+                        setTouchXStart(event.targetTouches[0]?.clientX);
+                        setTouchYEnd(0);
+                        setTouchYStart(event.targetTouches[0]?.clientY);
+                    }}
+                    onTouchMove={(event) => {
+                        setTouchXEnd(event.targetTouches[0]?.clientX);
+                        setTouchYEnd(event.targetTouches[0]?.clientY);
+                    }}
+                    onTouchEnd={() => {
+                        
+                        if (touchXStart && touchXEnd) {
+                            const distance = touchXStart - touchXEnd;
+                            if (distance > minSwipeDistance)
+                                newDirection.current = 'left';
+                            else if (distance < -minSwipeDistance)
+                                newDirection.current = 'right';
+                        }
+                        if (touchYStart && touchYEnd) {
+                            const distance = touchYStart - touchYEnd;
+                            if (distance > minSwipeDistance)
+                                newDirection.current = 'up';
+                            else if (distance < -minSwipeDistance)
+                                newDirection.current = 'down';
+                        }
+                        console.log(newDirection.current);
                     }}
                 >
                     <div className='m-auto flex xl:flex-row flex-col gap-5 p-5'>
@@ -663,30 +718,38 @@ function Game({
                                 </div>
                             </div>
                         </div>
-                        <div className='xl:hidden flex flex-col w-full gap-2 items-center'>
-                            <div className='w-1/4 h-20 rounded-2xl bg-gray-300 flex'>
-                                <ArrowBigUp className='m-auto size-10'
-                                    onClick={() => newDirection.current = "up"}
-                                />
+                        {/* <div className='xl:hidden flex flex-col w-full gap-2 items-center'>
+                            <div className='w-1/4 h-20 rounded-2xl bg-gray-300 flex cursor-pointer'
+                                onClick={() => newDirection.current = "up"}
+                            >
+                                <ArrowBigUp className='m-auto size-10' />
                             </div>
                             <div className='w-4/5 h-20 flex flex-row gap-2'>
-                                <div className='w-1/3 h-full rounded-2xl bg-gray-300 flex'>
-                                    <ArrowBigLeft className='m-auto size-10'
-                                        onClick={() => newDirection.current = "left"}
-                                    />
+                                <div className='w-1/3 h-full rounded-2xl bg-gray-300 flex cursor-pointer'
+                                    onClick={() => newDirection.current = "left"}
+                                >
+                                    <ArrowBigLeft className='m-auto size-10' />
                                 </div>
-                                <div className='w-1/3 h-full rounded-2xl bg-gray-300 flex'>
-                                    <ArrowBigDown className='m-auto size-10'
-                                        onClick={() => newDirection.current = "down"}
-                                    />
+                                <div className='w-1/3 h-full rounded-2xl bg-gray-300 flex cursor-pointer'
+                                    onClick={() => newDirection.current = "down"}
+                                >
+                                    <ArrowBigDown className='m-auto size-10' />
                                 </div>
-                                <div className='w-1/3 h-full rounded-2xl bg-gray-300 flex'>
-                                    <ArrowBigRight className='m-auto size-10'
-                                        onClick={() => newDirection.current = "right"}
-                                    />
+                                <div className='w-1/3 h-full rounded-2xl bg-gray-300 flex cursor-pointer'
+                                    onClick={() => newDirection.current = "right"}
+                                >
+                                    <ArrowBigRight className='m-auto size-10' />
                                 </div>
                             </div>
-                        </div>
+                        </div> */}
+                        {playingTrackPreviewURL && <audio
+                            autoPlay
+                            src={playingTrackPreviewURL}
+                            ref={(player) => {
+                                if (player)
+                                    player.volume = 0.4;
+                            }}
+                        />}
                     </div>
                 </div>
     }</>;

@@ -31,6 +31,7 @@
     "@types/bun": "latest",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cheerio": "^1.1.2",
     "typescript-eslint": "^8.42.0"
   }
 }
