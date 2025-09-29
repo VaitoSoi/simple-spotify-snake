@@ -718,7 +718,7 @@ function Game({
                                 </div>
                             </div>
                         </div>
-                        {/* <div className='xl:hidden flex flex-col w-full gap-2 items-center'>
+                        <div className='xl:hidden flex flex-col w-full gap-2 items-center'>
                             <div className='w-1/4 h-20 rounded-2xl bg-gray-300 flex cursor-pointer'
                                 onClick={() => newDirection.current = "up"}
                             >
@@ -741,7 +741,7 @@ function Game({
                                     <ArrowBigRight className='m-auto size-10' />
                                 </div>
                             </div>
-                        </div> */}
+                        </div>
                         {playingTrackPreviewURL && <audio
                             autoPlay
                             src={playingTrackPreviewURL}
